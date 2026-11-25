@@ -231,7 +231,7 @@ function remoteDoc(){return{name:S.profile.name,email:S.profile.email,org:S.prof
 function send(ev){if(!(TRACK_URL.slice(0,6)==="https:"))return;try{fetch(TRACK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign(remoteDoc(),{totalModules:ORDER.length,event:ev||null}))}).catch(()=>{});}catch(e){}}
 function push(ev){if(MODE==="gas"){if(profileOK()&&!REVIEW&&window.google&&google.script&&google.script.run){try{google.script.run.withSuccessHandler(()=>{REMOTE="ok";}).withFailureHandler(()=>{REMOTE="error";}).saveProgress(JSON.stringify(Object.assign(remoteDoc(),{totalModules:ORDER.length,event:ev||null})));}catch(e){}}return;}if(MODE==="github"){if(profileOK()&&!REVIEW)send(ev);return;}if(!DB||!UID||!profileOK()||REVIEW)return;const d=remoteDoc();wq=wq.then(()=>DB.doc("learners/"+UID).set(d)).then(()=>{REMOTE="ok";}).catch(e=>{REMOTE=(e&&e.code==="invalid_argument")?"denied":"error";const n=document.getElementById("rnote");if(n)n.innerHTML=remoteNote();});}
 function remoteNote(){if(REVIEW)return"";if(MODE==="gas")return`<span class="pill p-g">Your progress is recorded for Increff L&amp;D</span>`;if(MODE==="github"&&(TRACK_URL.slice(0,6)==="https:"))return`<span class="pill p-g">Your progress is shared with Increff</span> <button class="lnk" id="cpres">Copy my results</button>`;if(REMOTE==="ok"||REMOTE==="pending"&&DB)return`<span class="pill p-g">Progress is being recorded</span>`;
- return`<span class="pill p-n">Progress saved on this device only</span> <button class="lnk" id="cpres">Copy my results</button> <span style="font-size:12.5px">${EDITION==="partner"?"Send them to your Increff partnerships contact when you finish.":"Ask Shyama for Contributor access so your progress is recorded."}</span>`;}
+ return`<span class="pill p-n">Progress saved on this device only</span> <button class="lnk" id="cpres">Copy my results</button> <span style="font-size:12.5px">${EDITION!=="internal"?"Send them to your Increff partnerships contact when you finish.":"Ask Shyama for Contributor access so your progress is recorded."}</span>`;}
 function resultsText(){const p=S.profile||{};const rows=ORDER.map(m=>{const a=(S.att||{})[m]||[];return m+": "+(S.done[m]?"passed "+S.done[m]+"%":"not passed")+", "+a.length+" attempt(s)";});return["Increff Learning Academy ("+EDITION+")","Name: "+(p.name||""),"Email: "+(p.email||""),"Organisation: "+(p.org||""),S.cert?"Certified: "+S.cert.score+"% on "+S.cert.date:"Not yet certified",""].concat(rows).join("\n");}
 (async()=>{try{if(MODE!=="claude"||!(window.claude&&claude.use)){REMOTE="none";return;}
  const U=await claude.use("user");DB=await claude.use("db");if(!U||!DB){REMOTE="none";DB=null;return;}
@@ -248,7 +248,7 @@ const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 /* ---------- home ---------- */
 function home(){
  const n=ORDER.length,d=ORDER.filter(m=>S.done[m]).length,pc=Math.round(d/n*100);
- let h=`<div class="hero" id="hero"><h1>Learn Increff from zero: retail, products, selling${EDITION==="partner"?"":" and partnerships"}.</h1>
+ let h=`<div class="hero" id="hero"><h1>${EDITION==="partner-tge"?"Learn Increff’s products and the industries we serve.":"Learn Increff from zero: retail, products, selling"+(EDITION==="partner"?"":" and partnerships")+"."}</h1>
  <p>Mandatory before you start in the field. Work through each module in order. Every module ends with a short quiz: score 80% to unlock the next one.</p>
  ${profileOK()||REVIEW?`<div class="row"><div style="color:#fff;font-weight:700">${esc((S.profile||{}).name||"Reviewer")}${S.profile?` <span style="font-weight:500;color:#C9D3E6">\u00b7 ${esc(S.profile.org)}</span>`:""}</div>`:`<form class="reg" id="reg"><b>Register to start</b><input id="rn" placeholder="Full name" required><input id="re" type="email" placeholder="Work email" required ${GAS_EMAIL?`value="${esc(GAS_EMAIL)}" readonly`:""}><input id="ro" placeholder="Organisation" required ${MODE==="gas"?`value="Increff"`:""}><button class="btn c" type="submit">Start learning</button><span id="rerr"></span><span class="consent">By registering, you agree that your name, email, organisation and quiz results are shared with Increff to track your training.</span></form><div class="row">`}
  <div><div class="bar"><i style="width:${pc}%"></i></div><div class="prog-l">${d} of ${n} modules passed${REVIEW?" \u00b7 reviewer mode":""}</div></div></div><div id="rnote" style="margin-top:10px;position:relative;z-index:1">${profileOK()?remoteNote():""}</div></div>
@@ -409,7 +409,7 @@ function cert(c){if(!c)return"";return`<div class="cert"><div class="cl"><svg wi
 <rect width="250.02" height="75" fill="white"/>
 </clipPath>
 </defs>
-</svg></div><div class="ck">Certificate of completion</div><div class="cn">${esc(c.name||"Your name")}</div><div class="ct">has completed the <b>Increff Learning Academy</b>${EDITION==="internal"?"":" (Partner edition)"}, covering retail fundamentals, Increff products, competition${EDITION==="partner"?" and BANT qualification":", BANT qualification and partnerships"}, and passed the final certification exam with <b>${c.score}%</b>.</div><div class="cd">${c.date}</div></div>`;}
+</svg></div><div class="ck">Certificate of completion</div><div class="cn">${esc(c.name||"Your name")}</div><div class="ct">has completed the <b>Increff Learning Academy</b>${EDITION==="internal"?"":" (Partner edition)"}, ${EDITION==="partner-tge"?"covering Increff products and industry use cases":"covering retail fundamentals, Increff products, competition"+(EDITION==="partner"?" and BANT qualification":", BANT qualification and partnerships")}, and passed the final certification exam with <b>${c.score}%</b>.</div><div class="cd">${c.date}</div></div>`;}
 /* ---------- admin tracker ---------- */
 function topbar(){const b=document.getElementById("trBtn");if(b){b.style.display=ISADMIN&&DB?"":"none";b.onclick=tracker;}}
 const fmtD=t=>t?new Date(t).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):"";
@@ -439,8 +439,8 @@ async function tracker(){if(!ISADMIN||!DB)return;app.innerHTML=`<div class="lhea
 }
 /* ---------- glossary ---------- */
 const gl=document.getElementById("gl"),glL=document.getElementById("glL"),glQ=document.getElementById("glQ");
-function renderGl(){const q=glQ.value.toLowerCase();glL.innerHTML=GLOSSARY.filter(g=>MODULES[g[2]]&&(g[0]+" "+g[1]).toLowerCase().includes(q)).sort((a,b)=>a[0].localeCompare(b[0])).map(g=>`<div class="it"><b>${g[0]}</b>${g[1]} <a data-gm="${g[2]}">Module ${g[2]} \u2192</a></div>`).join("")||"<p style='color:var(--muted)'>No match.</p>";
- glL.querySelectorAll("[data-gm]").forEach(a=>a.onclick=()=>{const m=a.dataset.gm;gl.classList.remove("open");if(unlocked(m))lesson(m,0);});}
+function renderGl(){const q=glQ.value.toLowerCase();glL.innerHTML=GLOSSARY.filter(g=>MODULES[g[2]]&&(g[0]+" "+g[1]).toLowerCase().includes(q)).sort((a,b)=>a[0].localeCompare(b[0])).map(g=>`<div class="it"><b>${g[0]}</b>${g[1]}${MODULES[g[2]]?` <a data-gm="${g[2]}">Module ${g[2]} \u2192</a>`:""}</div>`).join("")||"<p style='color:var(--muted)'>No match.</p>";
+ glL.querySelectorAll("[data-gm]").forEach(a=>a.onclick=()=>{const m=a.dataset.gm;gl.classList.remove("open");if(MODULES[m]&&unlocked(m))lesson(m,0);});}
 document.getElementById("glBtn").onclick=()=>{gl.classList.add("open");glQ.value="";renderGl();glQ.focus();};
 document.getElementById("glX").onclick=()=>gl.classList.remove("open");
 gl.onclick=e=>{if(e.target===gl)gl.classList.remove("open");};
